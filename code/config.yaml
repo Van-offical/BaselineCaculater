@@ -1,0 +1,47 @@
+# config.yaml
+base_data_dir: "../data"
+base_result_dir: "../result"
+meteorological_data:
+  subfolders: ["PRS", "RHU", "TEM", "WIN"]
+  required_columns:
+    PRS:
+      mandatory: ["站名", "区站号", "纬度", "经度", "年", "月", "日"]
+      optional: ["平均本站气压", "平均气压"]
+    RHU:
+      mandatory: ["站名", "区站号", "纬度", "经度", "年", "月", "日"]
+      optional: ["平均相对湿度", "平均湿度"]
+    TEM:
+      mandatory: ["站名", "区站号", "纬度", "经度", "年", "月", "日", "平均气温"]
+    WIN:
+      mandatory: ["站名", "区站号", "纬度", "经度", "年", "月", "日", "平均风速", "极大风速风向"]
+output_directories:
+  Matched_Data: "Matched_Data"
+  WeatherRemove_Data: "WeatherRemove_Data"
+  Baseline_Data: "Baseline_Data"
+  Baseline_Data_With_WeatherRemove: "Baseline_Data_With_WeatherRemove"
+  Converted_Data: "Convert_Data"
+  Province_Baseline_Data: "Province_Baseline_Data"
+  Province_Baseline_Data_With_WeatherRemove: "Province_Baseline_Data_With_WeatherRemove"
+  Province_Matched_Data: "Province_Matched_Data"
+weather_config:
+  target_col: "O3"     # 默认污染物
+  time_col: "Date"
+  feature_cols:
+    - "Mean_Pressure"
+    - "Mean_Humidity"
+    - "Mean_Temperature"
+    - "Mean_Wind_Speed"
+    - "Max_Wind_Direction"
+    - "dayofyear"
+  exclude_cols:
+    - "Station_Code"
+    - "Station_Name"
+    - "v1"
+    - "Date"
+    - "date"
+    - "Province"
+  random_forest_params:
+    n_estimators: 200
+    max_depth: 15
+    n_jobs: -1
+    random_state: 42
