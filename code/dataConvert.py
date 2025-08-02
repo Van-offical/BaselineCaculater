@@ -18,7 +18,7 @@ class DataConvert:
             os.makedirs(self.output_path)
         df = self.readData()
         target = df["v1"].iloc[0]
-        first_col_name = df.columns[0]
+        first_col_name = "Station_Code"
         # 1. 筛选臭氧数据（假设 v1 列是污染物类型，O3 表示臭氧）
         df_target = df[df["v1"] == target].copy()
 
@@ -96,10 +96,13 @@ class DataConvert:
 
 
 
-    def ConvertWeatherRemoveData(self, data_path):
+    def ConvertWeatherRemoveData(self, data_path, province_mode=False):
         df = pd.read_csv(data_path)
 
-        first_col_name = df.columns[0]
+        if(province_mode==False):
+            first_col_name = "Station_Code"
+        else:
+            first_col_name = "Province"
 
         target = df["v1"].iloc[0]
         

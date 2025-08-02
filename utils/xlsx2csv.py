@@ -59,8 +59,8 @@ if __name__ == "__main__":
     # 使用示例
     # 遍历文件夹为data下的所有子文件夹 调用xlsx_to_csv函数
     print(os.getcwd())
-    input_dir = '../data'
-    output_dir = '../data'
+    input_dir = r'F:\MyProgram\Python\BaselineCacu\2018\2018\RHU'
+    output_dir = r'F:\MyProgram\Python\BaselineCacu\2018\2018\RHU'
     print('开始转换')
     # 遍历data文件夹下的所有子文件夹 打印路径
     for dirs in os.listdir(input_dir):

@@ -209,6 +209,8 @@ def merge_meteorological_data(data_prs, data_rhu, data_tem, data_win):
     df_merge["Date"] = df_merge.apply(
         lambda row: f"{int(row['年']):04d}-{int(row['月']):02d}-{int(row['日']):02d}",
         axis=1,
+        # 构造日期列，格式为 yyyy-MM-dd
+        result_type='reduce'
     )
 
     # 将纬度和经度从度分格式转换为十进制度
@@ -300,17 +302,28 @@ def match_stations(df, stations):
     distances, indices = tree.query(station_coords)
 
     result_frames = []
+    # 检查unique_coords是否为空
+    if unique_coords.empty:
+        print("警告: 没有找到有效的坐标数据，无法进行站点匹配。")
+        return pd.DataFrame()
+        
     for i, unique_idx in enumerate(indices):
-        station_info = valid_stations.iloc[i]
-        coord = unique_coords.iloc[unique_idx]
-        # 选择 df 中与该坐标相同的所有行（即该气象站的完整时间序列数据）
-        matched_rows = df[
-            (df["Latitude"] == coord["Latitude"])
-            & (df["Longitude"] == coord["Longitude"])
-        ].copy()
-        if not matched_rows.empty:
-            matched_rows["Station_Code"] = station_info["Station_Code"]
-            matched_rows["Station_Name"] = station_info["Station_Name"]
+        # 确保索引在有效范围内
+        if 0 <= unique_idx < len(unique_coords):
+            station_info = valid_stations.iloc[i]
+            coord = unique_coords.iloc[unique_idx]
+            
+            # 选择 df 中与该坐标相同的所有行（即该气象站的完整时间序列数据）
+            matched_rows = df[
+                (df["Latitude"] == coord["Latitude"])
+                & (df["Longitude"] == coord["Longitude"])
+            ].copy()
+            if not matched_rows.empty:
+                matched_rows["Station_Code"] = station_info["Station_Code"]
+                matched_rows["Station_Name"] = station_info["Station_Name"]
+                result_frames.append(matched_rows)
+        else:
+            print(f"警告: 站点索引 {i} 的坐标索引 {unique_idx} 超出范围，将跳过该站点。")
             # 调整输出字段顺序
             matched_rows = matched_rows[
                 [
@@ -365,7 +378,14 @@ def merge_value_data(matched_df, value_path, value_name="value1"):
     # 读取 o3.csv，假设第一列为站点编码
     value_df = pd.read_csv(value_path, index_col=0)
     # 将索引重置为列，并重命名为 'Station_Code'
-    value_df = value_df.reset_index().rename(columns={"index": "Station_Code"})
+    value_df = value_df.reset_index()
+    # 确保索引列被重命名为 'Station_Code'
+    if 'index' in value_df.columns:
+        value_df = value_df.rename(columns={'index': 'Station_Code'})
+    else:
+        # 如果索引有名称，使用该名称重命名
+        index_name = value_df.columns[0]
+        value_df = value_df.rename(columns={index_name: 'Station_Code'})
     # 使用 melt 将宽格式转换为长格式
     value_long = value_df.melt(
         id_vars="Station_Code", var_name="Date", value_name=value_name
@@ -432,6 +452,11 @@ def process_data(
     print("匹配后的站点预览:")
     print(matched_df.head())
 
+    # 检查matched_df是否为空
+    if matched_df.empty:
+        print("警告: 没有找到匹配的站点数据，无法继续合并污染物数据。")
+        return []
+        
     # 根据 'Station_Code' 和 'Date' 合并 O3（或其他数值）数据
     merged_df = merge_value_data(matched_df, value_path, value_name)
     print("合并 污染物 数据后的预览:")

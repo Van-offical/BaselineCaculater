@@ -18,7 +18,6 @@ from sklearn.base import clone
 from tqdm import tqdm
 
 
-
 class WeatherNormalizer:
     """气象归一化分析核心类"""
 
@@ -99,7 +98,7 @@ class WeatherNormalizer:
         # 生成预测值
         cleaned_df["human_effect"] = self.model.predict(X)
         cleaned_df["natural_effect"] = (
-            cleaned_df[self.config["target_col"]] - cleaned_df["human_effect"]
+                cleaned_df[self.config["target_col"]] - cleaned_df["human_effect"]
         )
 
         # 保存结果
@@ -129,111 +128,112 @@ class WeatherNormalizer:
         first_col_name = df.columns[0]
         if not np.issubdtype(df["date"].dtype, np.datetime64):
             df["date"] = pd.to_datetime(df["date"])
-        
+
         # 颜色配置
         colors = {
-            "human_effect": "#4B9AC9",    # 蓝
-            "natural_effect": "#4BC96B",   # 绿
-            "target_line": "#FF6B6B"      # 红
+            "human_effect": "#4B9AC9",  # 蓝
+            "natural_effect": "#4BC96B",  # 绿
+            "target_line": "#FF6B6B"  # 红
         }
 
         stations = df[first_col_name].unique()
         pbar = tqdm(total=len(stations), desc="Processing Stations/Province",
-                bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt}")
+                    bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt}")
 
         def plot_grouped_months(ax, df_group):
             """月份组绘图核心逻辑（含自动柱宽调整）"""
             # 日期数值转换与间隔计算（参考网页3的数值转换方法）
             dates = mdates.date2num(df_group["date"])
-            
+
             # 自动计算柱宽（核心改造点）
             if len(dates) > 1:
                 # 计算最小日期间隔（处理跨月数据）
                 day_interval = np.diff(dates).min()  # 获取最小时间间隔
-                auto_width = day_interval * 0.8      # 保留20%间距（参考网页6的间距建议）
+                auto_width = day_interval * 0.8  # 保留20%间距（参考网页6的间距建议）
             else:
                 auto_width = 0.8  # 单数据点默认宽度
-            
+
             # 堆叠柱状图（根据网页1的width参数调整方案）
             # 在绘制柱状图时添加label参数[1,6](@ref)
-            bars = ax.bar(dates, df_group["human_effect"], 
-                        width=auto_width, color=colors["human_effect"],
-                        label='Human Effect')  # 新增label
+            bars = ax.bar(dates, df_group["human_effect"],
+                          width=auto_width, color=colors["human_effect"],
+                          label='Human Effect')  # 新增label
 
-            ax.bar(dates, df_group["natural_effect"], 
-                width=auto_width, bottom=df_group["human_effect"],
-                color=colors["natural_effect"],
-                label='Natural Effect')  # 新增label
+            ax.bar(dates, df_group["natural_effect"],
+                   width=auto_width, bottom=df_group["human_effect"],
+                   color=colors["natural_effect"],
+                   label='Natural Effect')  # 新增label
 
             # 在绘制折线图时添加label参数[1](@ref)
-            line = ax.plot(dates, df_group[self.config["target_col"]], 
-                        color=colors["target_line"], marker='o', markersize=4,
-                        linestyle='--', linewidth=1.5,
-                        label='Target Line')  # 新增label
+            line = ax.plot(dates, df_group[self.config["target_col"]],
+                           color=colors["target_line"], marker='o', markersize=4,
+                           linestyle='--', linewidth=1.5,
+                           label='Target Line')  # 新增label
 
             # 在函数末尾添加图例配置[6,8](@ref)
-            ax.legend(loc='upper right', 
-                    frameon=True,
-                    fontsize=8,
-                    ncol=1,
-                    title='Legend',
-                    title_fontsize=9,
-                    borderpad=0.8,
-                    handlelength=1.5)
-            
+            ax.legend(loc='upper right',
+                      frameon=True,
+                      fontsize=8,
+                      ncol=1,
+                      title='Legend',
+                      title_fontsize=9,
+                      borderpad=0.8,
+                      handlelength=1.5)
+
             # 坐标轴格式化
             ax.xaxis.set_major_locator(mdates.MonthLocator())
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
             plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
-            
+
             # 数据标签
             for bar, y1, y2 in zip(bars, df_group["human_effect"], df_group["natural_effect"]):
                 height = y1 + y2
-                ax.text(bar.get_x() + bar.get_width()/2, height + 0.1, 
-                    f'{height:.1f}', ha='center', va='bottom', fontsize=6)
+                ax.text(bar.get_x() + bar.get_width() / 2, height + 0.1,
+                        f'{height:.1f}', ha='center', va='bottom', fontsize=6)
 
         # 主处理逻辑
         for station in stations:
             station_df = df[df[first_col_name] == station].sort_values('date')
             all_months = sorted(station_df["month"].unique())
-            
+
             # 月份分组处理
-            month_groups = [all_months[i:i+months_per_image] 
-                        for i in range(0, len(all_months), months_per_image)]
-            
+            month_groups = [all_months[i:i + months_per_image]
+                            for i in range(0, len(all_months), months_per_image)]
+
             for group_idx, month_group in enumerate(month_groups):
                 # 动态计算子图布局（参考网页6/7的subplots方案）
                 n_months = len(month_group)
                 # 向下取整
                 n_rows = int(np.floor(np.sqrt(n_months)))
                 n_cols = int(np.ceil(n_months / n_rows))
-                
-                fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols*10, n_rows*6))
+
+                fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 10, n_rows * 6))
                 axes = axes.flatten() if isinstance(axes, np.ndarray) else [axes]
-                
+
                 # 绘制每个月份的图表
                 for i, month in enumerate(month_group):
                     df_month = station_df[station_df["month"] == month]
                     plot_grouped_months(axes[i], df_month)
                     axes[i].set_title(f"Month: {month}", fontsize=10)
-                
+
                 # 隐藏空子图（参考网页8的布局优化）
-                for j in range(i+1, len(axes)):
+                for j in range(i + 1, len(axes)):
                     axes[j].set_visible(False)
-                
+
                 # 整体布局调整（参考网页8的subplots_adjust）
                 plt.subplots_adjust(wspace=0.3, hspace=0.4)
-                plt.suptitle(f"Station(Province) {station} - Group {group_idx+1} ({min(month_group)}-{max(month_group)})", 
-                            y=0.98, fontsize=12)
-                
+                plt.suptitle(
+                    f"Station(Province) {station} - Group {group_idx + 1} ({min(month_group)}-{max(month_group)})",
+                    y=0.98, fontsize=12)
+
                 # 保存输出
                 output_path = os.path.join(
                     self.config["output_dir"],
-                    f"Station(Province)_{station}_Group{group_idx+1}.png"
+                    f"Station(Province)_{station}_Group{group_idx + 1}.png"
                 )
                 plt.savefig(output_path, dpi=150, bbox_inches='tight')
                 plt.close()
-            
+
             pbar.update(1)
         pbar.close()
 
@@ -269,7 +269,7 @@ class WeatherNormalizer:
         plt.close()
 
 
-def main(input_path, config=None):
+def main(input_path, config=None, province_mode=False):
     """主流程控制器"""
     # 配置参数（可根据实际数据调整）
     if config is None:
@@ -299,6 +299,13 @@ def main(input_path, config=None):
 
     # 加载数据
     raw_data = pd.read_csv(input_path)
+
+    # 若不为省分析模式则把Station_Code放在第一列
+    if not province_mode:
+        # 明确指定列顺序
+        cols = ["Station_Code", "Station_Name"] + [col for col in raw_data.columns if
+                                                   col not in {"Station_Code", "Station_Name"}]
+        raw_data = raw_data[cols]
 
     # 取前100行
 

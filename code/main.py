@@ -118,7 +118,7 @@ def main():
             # 设置输出文件夹
             weather_config = get_weather_config(os.path.join(output_dirs[7], province), pollutant, config)
             # 设置输入数据
-            weatherRemove.main(input_path=province_match_ave_csv, config=weather_config)
+            weatherRemove.main(input_path=province_match_ave_csv, config=weather_config, province_mode=True)
 
         # 基线计算
         # 选择是否跳过基线计算
