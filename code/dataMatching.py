@@ -386,6 +386,8 @@ def merge_value_data(matched_df, value_path, value_name="value1"):
         # 如果索引有名称，使用该名称重命名
         index_name = value_df.columns[0]
         value_df = value_df.rename(columns={index_name: 'Station_Code'})
+    # 剔除除第一列外其他值为空的数据
+    value_df = value_df.dropna(axis=0, how="any", subset=value_df.columns[1:])
     # 使用 melt 将宽格式转换为长格式
     value_long = value_df.melt(
         id_vars="Station_Code", var_name="Date", value_name=value_name
@@ -397,7 +399,7 @@ def merge_value_data(matched_df, value_path, value_name="value1"):
 
     # 根据 'Station_Code' 和 'Date' 合并数据，采用左连接保留 matched_df 的所有记录
     merged_df = pd.merge(
-        matched_df, value_long, on=["Station_Code", "Date"], how="left"
+        matched_df, value_long, on=["Station_Code", "Date"], how="right"
     )
 
     # 添加额外列 v1，值为 value_name
